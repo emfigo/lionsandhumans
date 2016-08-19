@@ -2,7 +2,5 @@
 
 (defn dock-in
   [shore]
-  (case shore
-    "A" (println "now it should add records to shoreA db")
-    "B" (println "now it should add records to shoreB db")
-    (println "Pirate ship docked!")))
+  (println "I consume rabbitmq msg from queue")
+  (println "I write consumed data to database"))

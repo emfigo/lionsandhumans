@@ -45,4 +45,5 @@
       (if (human-inside?)
         (sail-out boat ch)
         (println 
-         "There is no human to operate the boat and so it stays in shore " shore)))))
+         "There is no human to operate the boat and so it stays in shore "
+         shore)))))
