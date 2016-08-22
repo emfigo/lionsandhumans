@@ -12,8 +12,8 @@
                       "shoreA" "shoreB"
                       "shoreB" "shoreA")]
     (do
-     (db/del pA starting-shore)
-     (db/del pB starting-shore)
+     (db/del starting-shore pA )
+     (db/del starting-shore pB )
      (send-boat pA pB destination-shore ch)
      (dc/dock-in ch destination-shore))))
 

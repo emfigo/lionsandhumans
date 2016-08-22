@@ -11,8 +11,8 @@
              [queue :as lq]]))
 
 (defn start
-  [&args]
+  [objs]
   (let
-    [list-of-objects (db/db-read "shoreA")
-     decisions-stream (alg/compute-decisions list-of-objects)]
+    [decisions-stream (alg/compute-decisions objs)]
+    (apply #(db/write shoreA %) objs )
     (process-stream decisions-stream)))

@@ -3,11 +3,9 @@
              [basic :as lb]
              [channel :as lch]
              [consumers :as lc]
-            [core :as rmq]
+             [core :as rmq]
              [queue :as lq]]
-            [core.data.json :as json]
-            [lionsandhumans
-             [docking :as dc]]))
+            [clojure.data.json :as json]))
 
 
 (defn human-inside?
@@ -18,7 +16,7 @@
 
 
 (defn sail-out
- [boat shore ch]
+ [boat ch]
  (let
    [msg (json/write-str boat)
     exchange (-> conf/params :rabbit :exchange)
@@ -40,8 +38,13 @@
   [x y shore ch]
   (let
     [boat (get-on-board x y)]
-    (if (and (nil? (:seatA boat)) (nil? (:seatB boat))) 
-      (println "Boat is empty. Unable to send the boat to shore" shore "---" boat)
+    (if (and (nil? (:seatA boat)) 
+             (nil? (:seatB boat))) 
+      (println 
+       "Boat is empty. Unable to send the boat to shore" 
+       shore 
+       "---" 
+       boat)
       (if (human-inside?)
         (sail-out boat ch)
         (println 
