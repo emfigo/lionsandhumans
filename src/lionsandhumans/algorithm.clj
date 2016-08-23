@@ -1,6 +1,7 @@
-(ns lionsandhumans.algorithm)
+(ns lionsandhumans.algorithm
+  (:gen-class))
 
-
+;;(compute-decisions ["H1" "L1" "H2" "L2"])
 
 (defn try-decisions
   [shoreA shoreB sh]
@@ -24,8 +25,7 @@
                          (remove #{h1} shoreA) 
                          (conj shoreB h1)
                          (- sh)))
-       human_and_human (if (or (nil? h2) (nil? h1))
-                         nil
+       human_and_human (if (or (nil? h2) (nil? h1)) nil
                          (decide 
                           (remove #{h1 h2} shoreA) 
                           (conj shoreB h1)
@@ -68,7 +68,6 @@
                           (conj shoreA h1 h2)
                           (remove #{h1 h2} shoreB) 
                           (- sh)))]
-      (println "DEBUG#" " hs " hs " h1 " h1 " h2 " h2 " l " l)
       (cond
        human_and_lion (conj human_and_lion 
                             {:passengerA h1 
@@ -98,10 +97,7 @@
         nil
         (try-decisions shoreA shoreB sh)))))
 
-
 (defn compute-decisions
   [x]
-  (let 
-    [ammount (/ (count x) 2)]
-    (decide x [] 1)))
+  (decide x [] 1))
 

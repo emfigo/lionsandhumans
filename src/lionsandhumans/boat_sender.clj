@@ -1,10 +1,13 @@
 (ns lionsandhumans.boat-sender
+  (:gen-class)
   (:require [langohr
              [basic :as lb]
              [channel :as lch]
              [consumers :as lc]
              [core :as rmq]
              [queue :as lq]]
+            [lionsandhumans
+             [config :as conf]]
             [clojure.data.json :as json]))
 
 
@@ -16,11 +19,11 @@
 
 
 (defn sail-out
- [boat ch]
+ [boat shore ch]
  (let
    [msg (json/write-str boat)
     exchange (-> conf/params :rabbit :exchange)
-    routing-key (-> conf/params :rabbit :routing-key)]
+    routing-key (get (-> conf/params :rabbit :routing-key) shore)]
    (lb/publish ch 
                exchange 
                routing-key 
@@ -45,8 +48,8 @@
        shore 
        "---" 
        boat)
-      (if (human-inside?)
-        (sail-out boat ch)
+      (if (human-inside? boat)
+        (sail-out boat shore ch)
         (println 
          "There is no human to operate the boat and so it stays in shore "
          shore)))))

@@ -1,34 +1,50 @@
-(ns lionsandhumans.docking)
+(ns lionsandhumans.docking
+  (:gen-class)
+  (:require [lionsandhumans
+             [config :as conf]
+             [db :as db]]
+            [langohr
+             [basic :as lb]
+             [channel :as lch]
+             [consumers :as lc]
+             [core :as rmq]
+             [queue :as lq]]
+            [clojure.data.json :as json]))
+
+(defn consume-msg
+  [ch destination-shore]
+  (let [queue-name (get (-> conf/params :rabbit :queue) destination-shore)
+        db-key (get (-> conf/params :redis :db-key) destination-shore)
+        msg-handler (fn 
+                      [ch metadata ^bytes payload]
+                      (println (format "[consumer] %s received a message: %s"
+                                       queue-name
+                                       (String. payload "UTF-8")))
+                      (let
+                        [message (json/read-str payload)
+                         passengerA (get message "seatA")
+                         passengerB (get message "seatB")
+                         source-shore (case destination-shore
+                                        "shoreA" "shoreB"
+                                        "shoreB" "shoreA")
+                         old-destination (db/db-read destination-shore)
+                         old-source (db/db-read source-shore)
+                         new-destination (apply conj old-source 
+                                                (filter #(not= "empty" %) 
+                                                        [passengerA passengerB]))
+                         new-source (remove #{passengerA passengerB} old-source)]
+                        (db/db-write destination-shore new-destination)
+                        (db/db-write source-shore new-source)))]
+
+        ;thread  (Thread. (fn [] 
+                           (lc/subscribe 
+                            ch 
+                            queue-name 
+                            msg-handler 
+                            {:auto-ack true});;))]
+    ;(.start thread)
+    ))
 
 (defn dock-in
-  [shore]
-  (consume-msg ch shore shore)
-  (println "I write consumed data to database"))
-
-;;
-(defn consume-msg
   [ch shore]
-  (let
-    [queue-name (-> conf/params :rabbit :queue)
-     consumer  (lc/create-default ch
-                               {:handle-delivery-fn handle-msg 
-                                :handle-consume-ok-fn      (or (get cons-opts :handle-consume-ok-fn)
-                                                               (get cons-opts :handle-consume-ok))
-                                :handle-cancel-ok-fn       (or (get cons-opts :handle-cancel-ok-fn)
-                                                               (get cons-opts :handle-cancel-ok))
-                                :handle-cancel-fn          (or (get cons-opts :handle-cancel-fn)
-                                                               (get cons-opts :handle-cancel))
-                                :handle-recover-ok-fn      (or (get cons-opts :handle-recover-ok-fn)
-                                                               (get cons-opts :handle-recover-ok))
-                                :handle-shutdown-signal-fn (or (get cons-opts :handle-shutdown-signal-fn)
-                                                               (get cons-opts :handle-shutdown-signal))})]
-    (lb/consume ch queue-name consumer {})
-    ()))
-
-;;store to db
-(defn handle-msg 
-  [ch {:keys [routing-key] :as meta} ^bytes payload]
-  (println (format "[consumer] Consumed '%s' from %s, routing key: %s" 
-                   (String. payload "UTF-8") 
-                   "coolest_transport" 
-                   routing-key))) 
+  (consume-msg ch shore))
