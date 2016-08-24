@@ -1,103 +1,55 @@
 (ns lionsandhumans.algorithm
   (:gen-class))
 
-;;(compute-decisions ["H1" "L1" "H2" "L2"])
 
-(defn try-decisions
-  [shoreA shoreB sh]
-  (println "tryDEBUG# A " shoreA " B " shoreB " sh " sh)
-  (if (> sh 0)
-    (let ;;shoreA
-      [hs (filter #(re-matches #"H\d+" %) shoreA) 
-       h1 (first hs)
-       h2 (second hs)
-       l (first (filter #(re-matches #"L\d+" %) shoreA))
-       shore-name "shoreB" 
-       human_and_lion (if (or (nil? h1) (nil? l))
-                        nil
-                        (decide 
-                         (remove #{h1 l} shoreA) 
-                         (conj shoreB h1 l)
-                         (- sh)))
-       human_alone    (if (nil? h1)
-                        nil
-                        (decide 
-                         (remove #{h1} shoreA) 
-                         (conj shoreB h1)
-                         (- sh)))
-       human_and_human (if (or (nil? h2) (nil? h1)) nil
-                         (decide 
-                          (remove #{h1 h2} shoreA) 
-                          (conj shoreB h1)
-                          (- sh)))]
-      (cond
-       human_and_lion (conj human_and_lion 
-                            {:passengerA h1 
-                             :passengerB l 
-                             :shore shore-name})
-       human_and_human (conj human_and_human 
-                             {:passengerA h1 
-                              :passengerB h2 
-                              :shore shore-name})
-       human_alone (conj human_alone 
-                         {:passengerA h1 
-                          :passengerB nil 
-                          :shore shore-name})
-       :else nil))
-    (let ;;shoreB
-      [hs (filter #(re-matches #"H\d+" %) shoreB) 
-       h1 (first hs)
-       h2 (second hs)
-       l (first (filter #(re-matches #"L\d+" %) shoreB))
-       shore-name "shoreA"
-       human_alone    (if (nil? h1)
-                        nil
-                        (decide 
-                         (conj shoreA h1)
-                         (remove #{h1} shoreB) 
-                         (- sh)))
-       human_and_lion (if (or (nil? h1) (nil? l))
-                        nil
-                        (decide 
-                         (conj shoreA h1 l)
-                         (remove #{h1 l} shoreB)
-                         (- sh)))
-       human_and_human (if (or (nil? h2) (nil? h1))
-                         nil
-                         (decide 
-                          (conj shoreA h1 h2)
-                          (remove #{h1 h2} shoreB) 
-                          (- sh)))]
-      (cond
-       human_and_lion (conj human_and_lion 
-                            {:passengerA h1 
-                             :passengerB l 
-                             :shore shore-name})
-       human_and_human (conj human_and_human 
-                             {:passengerA h1 
-                              :passengerB h2 
-                              :shore shore-name})
-       human_alone (conj human_alone 
-                         {:passengerA h1 
-                          :passengerB nil 
-                          :shore shore-name})
-       :else nil))))
 
-(defn decide
-  [shoreA shoreB sh]
-  (println "DEBUG# A " shoreA " B " shoreB " sh " sh)
-  (if (empty? shoreA)
+
+(defn try-decision
+  [boat shoreA shoreB])
+
+
+(defn update-shore
+  [boat shore shore-name]
+  (if (= shore-name (:shore boat))
+    (conj shore (:passengerA boat) (:passengerB boat))
+    (remove #{(:passengerA boat) (:passengerB boat)} shore)))
+
+
+(defn generate-boats
+  [sh shname]
+  (let
+    [h1 (first (filter #(re-matches #"H\d+" %) sh))
+     h2 (second (filter #(re-matches #"H\d+" %) sh))
+     l (first (filter #(re-matches #"L\d+" %) sh))]
+   [(if (not (or (nil? h1) (nil? h2)))
+     {:passengerA h1 :passengerB h2 :shore shname})
+   (if (not (or (nil? h1) (nil? l))) 
+     {:passengerA h1 :passengerB l :shore shname})
+   (if (not (nil? h1))
+     {:passengerA h1 :passengerB nil :shore shname})]))
+
+
+(defn decide 
+  ;;WIP
+  ;;lack of handling empty boat
+  ;;
+  [previous-boat shoreA shoreB]
+  (if
+    (empty? shoreA)
     []
     (let
-      [HnA (count (filter #(re-matches #"H\d+" %) shoreA))
-       HnB (count (filter #(re-matches #"H\d+" %) shoreB))
-       LnA (count (filter #(re-matches #"L\d+" %) shoreA))
-       LnB (count (filter #(re-matches #"L\d+" %) shoreB))]
-      (if (or (< HnA LnA) (< HnB LnB))
-        nil
-        (try-decisions shoreA shoreB sh)))))
+    [source (if (= "shoreA" (:shore previous-boat)) shoreA shoreB)
+     destination (if (= "shoreA" (:shore previous-boat)) shoreB shoreA)
+     all-boats (generate-boats source (:shore previous-boat))
+     possible-boats (filter #(try-decision % shoreA shoreB) all-boats)
+     possible-decisions (map #(decide %
+                                      (update-shore % shoreA "shoreA")
+                                      (update-shore % shoreB "shoreB"))
+                             possible-boats)]
+    (first possible-decisions)))
+
 
 (defn compute-decisions
   [x]
-  (decide x [] 1))
-
+  (decide {:shore "shoreA"} x []))
+;;THE END

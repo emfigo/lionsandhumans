@@ -40,6 +40,7 @@
      conn (rmq/connect {:uri (-> conf/params :rabbit :uri)})
      ch (lch/open conn)]
     (db/db-write "shoreA" objs)
+    (db/db-write "shoreB" [])
     (dc/dock-in ch "shoreA")
     (dc/dock-in ch "shoreB")
     (process-stream ch decisions-stream)))

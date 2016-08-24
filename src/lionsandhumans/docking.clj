@@ -17,11 +17,11 @@
         db-key (get (-> conf/params :redis :db-key) destination-shore)
         msg-handler (fn 
                       [ch metadata ^bytes payload]
-                      (println (format "[consumer] %s received a message: %s"
-                                       queue-name
-                                       (String. payload "UTF-8")))
+                      ;                      (println (format "[consumer] %s received a message: %s"
+                      ;                                       queue-name
+                      ;                                       (String. payload "UTF-8")))
                       (let
-                        [message (json/read-str payload)
+                        [message (json/read-str (String. payload "UTF-8"))
                          passengerA (get message "seatA")
                          passengerB (get message "seatB")
                          source-shore (case destination-shore
@@ -29,20 +29,32 @@
                                         "shoreB" "shoreA")
                          old-destination (db/db-read destination-shore)
                          old-source (db/db-read source-shore)
-                         new-destination (apply conj old-source 
+                         new-source (remove 
+                                     #{passengerA passengerB} 
+                                     old-source)
+                         new-destination (apply conj old-destination
                                                 (filter #(not= "empty" %) 
                                                         [passengerA passengerB]))
-                         new-source (remove #{passengerA passengerB} old-source)]
+                         ]
+                        (println "oldsrc " old-source 
+                                 " olddest " old-destination 
+                                 " message " (class message) 
+                                 " passengerA " passengerA 
+                                 " passengerB " passengerB 
+                                 " destination-shore " destination-shore 
+                                 " source-shore " source-shore 
+                                 " payload " payload)
                         (db/db-write destination-shore new-destination)
-                        (db/db-write source-shore new-source)))]
+                        (db/db-write source-shore new-source)
+                        ))
 
-        ;thread  (Thread. (fn [] 
+        thread  (Thread. (fn [] 
                            (lc/subscribe 
                             ch 
                             queue-name 
                             msg-handler 
-                            {:auto-ack true});;))]
-    ;(.start thread)
+                            {:auto-ack true})))]
+    (.start thread)
     ))
 
 (defn dock-in
